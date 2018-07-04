@@ -1,15 +1,34 @@
 const mongoose = require('mongoose');
+const redis = require('redis');
+const util = require('util');
 
+const redisUrl = 'redis://127.0.0.1:6379';
+const client = redis.createClient(redis);
+client.get = util.promisify(client.get);
 const exec = mongoose.Query.prototype.exec;
 
-mongoose.Query.prototype.exec = function() {
-  console.log('About to run query');
+mongoose.Query.prototype.exec = async function() {
   
-  const key = Object.assign({}, this.getQuery(), {
+  const key = JSON.stringify(Object.assign({}, this.getQuery(), {
     collection: this.mongooseCollection.name
-  });
+  }));
+  
+  // See if we have a value for 'key' in redis
+  const cacheValue = await client.get(key);  
+  
+  // if we do then return that
+  if (cacheValue) {
+    const doc = JSON.parse(cacheValue);
+    
+    return Array.isArray(doc) 
+      ? doc.map(d => new this.model(d))
+      : new this.model(doc);
+  }
+  
+  // Otherwise, issue the query and store in redis.
+  const result = await exec.apply(this, arguments);
 
-  console.log(key);
+  client.set(key, JSON.stringify(result));
 
-  return exec.apply(this, arguments);
+  return result;
 }
