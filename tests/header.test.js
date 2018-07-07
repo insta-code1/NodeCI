@@ -10,7 +10,7 @@ beforeEach(async () => {
 });
 
 afterEach(async () => {
-    //await browser.close();
+    await browser.close();
 });
 
 test('the header has the correct text', async () => {
@@ -27,7 +27,7 @@ test('clicking login starts OAuth flow', async () => {
     expect(url).toMatch(/accounts\.google\.com/);
 });
 
-test.only('when signed in, shows logout button', async () => {
+test('when signed in, shows logout button', async () => {
     const id = '5b4102690840f1727a46617c';
     const sessionObject = {
         passport: {
@@ -46,4 +46,9 @@ test.only('when signed in, shows logout button', async () => {
     await page.setCookie({ name: 'session', value: sessionString });
     await page.setCookie({ name: 'session.sig',  value: sig} );
     await page.goto('localhost:3000');
+    await page.waitFor('a[href="/auth/logout"]');
+
+    const text = await page.$eval('a[href="/auth/logout"]', el => el.innerHTML);
+
+    expect(text).toEqual('Logout');
 });
