@@ -10,7 +10,7 @@ beforeEach(async () => {
 });
 
 afterEach(async () => {
-    await browser.close();
+    //await browser.close();
 });
 
 test('the header has the correct text', async () => {
@@ -27,7 +27,7 @@ test('clicking login starts OAuth flow', async () => {
     expect(url).toMatch(/accounts\.google\.com/);
 });
 
-test('when signed in, shows logout button', async () => {
+test.only('when signed in, shows logout button', async () => {
     const id = '5b4102690840f1727a46617c';
     const sessionObject = {
         passport: {
@@ -43,5 +43,7 @@ test('when signed in, shows logout button', async () => {
     const keygrip = new Keygrip([keys.cookieKey]);
     const sig = keygrip.sign('session=' + sessionString);
 
-    console.log(sessionString, sig);
+    await page.setCookie({ name: 'session', value: sessionString });
+    await page.setCookie({ name: 'session.sig',  value: sig} );
+    await page.goto('localhost:3000');
 });
